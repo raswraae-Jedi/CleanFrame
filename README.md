@@ -6,6 +6,8 @@ A quieter home screen for Samsung The Frame. Your apps, a photograph and the tim
 
 I built CleanFrame for one TV: my own Samsung The Frame, running Tizen. I'm sharing the code and setup notes as a starting point for other people to build on.
 
+> **This fork** combines CleanFrame with [tv-dashboard](https://github.com/raswraae-Jedi/tv-dashboard) for a Samsung QE75Q60T (Tizen 5.5): the Dock, navigation and Settings are CleanFrame's, and the photo background now carries a dashboard. See [Dashboard (dansk)](#dashboard-dansk) and the [TV note for the QE75Q60T](docs/tv-qe75q60t.md).
+
 **Use it at your own risk.** Most of the work has gone into making it work well on my TV. Very little has gone into making it portable. The setup scripts reflect my computer, TV and firmware, so expect to adapt them and test the result on your own hardware.
 
 I highly recommend forking it and building on top of it, ideally with a coding agent that can help you understand and adapt the setup. Start with the browser preview, make the interface your own, then work through TV installation when you're ready. Native Home/startup changes need particular care; the setup guide covers the risks and recovery steps.
@@ -25,10 +27,42 @@ Open [localhost:4795/home/](http://localhost:4795/home/). Use the arrow keys, En
 
 The public preview uses the included Manrope, Geist and Newsreader fonts.
 
+## Dashboard (dansk)
+
+Dashboardet ligger som et lag mellem CleanFrames foto og Home-knapperne/dokken, kun i Dock-layoutet:
+
+- **Venstre:** ur (24 timer) og dansk dato, vejret i Odense (nu, regn i dag 06–24 og tre dage) og kalenderen med prikker på dage med aftaler – som 2 uger eller hele måneden.
+- **Midten:** Duolingo – streak og om lektionen er lavet i dag.
+- **Højre:** Whoop – Recovery, Søvn, Strain og skridt i dag.
+- Fotoet bag får en mørk tone, der toner ud over dokken, så det forudrenderede glas i dokken stadig passer til billedet. Dashboardet har ingen fokuspunkter (`pointer-events: none`, ingen `data-action`), så fjernbetjeningen arbejder kun med dokken og knapperne oppe til højre. CleanFrames lille ur skjules, mens dashboardet vises.
+
+```
+app/dashboard.js  ──XHR + Bearer-token──▶  Cloudflare Worker /api/dashboard  ──▶  Open-Meteo, iCloud, Duolingo, WHOOP
+                                            (tv-dashboard/worker, uændret)
+```
+
+| Fil | Rolle |
+| --- | --- |
+| `app/dashboard.js` | ES5-port af `tv-dashboard/tizen-app/js/app.js`: hentning hvert 15. min (60 s efter fejl), cache i `localStorage` (`cleanframe.dashboard.v1`), rendering kun når minut, dag, data eller indstilling ændres. Uret opdateres fra CleanFrames minut-timer, og hentning holder pause, når appen er skjult eller dashboardet ikke vises. |
+| `app/dashboard-mock.js` | Demodata i Worker-formatet. Bruges uden token eller med `?mock`; `?mock&scenario=pending|stale|offline` viser de andre tilstande. |
+| `app/dashboard-config.js` | Offentlig standard **uden token** (giver demodata). Må aldrig få et token. |
+| `dashboard.config.example.js` | Skabelon til din lokale `.local/config.js`. |
+| `scripts/dashboard_config.py` | Indsætter `.local/config.js` (eller miljøvariablen `DASHBOARD_TOKEN`) som `dashboard-config.js` i preview og privat build. |
+
+**Token:** kopiér `dashboard.config.example.js` til `.local/config.js` og indsæt Worker'ens `DASHBOARD_TOKEN`. `.local/` er git-ignoreret. `npm run dev`, `npm run build` og `npm run package` bruger filen; `npm run export:public` og browser-checks gør aldrig. `npm run check` afviser et token i `app/dashboard-config.js`, og `npm run check:public` tjekker, at dit lokale token hverken findes i kildefiler eller i Git-historikken. En bygget `.wgt` med token er privat – del den ikke.
+
+**Preview:** `npm run dev` og åbn `http://localhost:4795/home/` (rigtige data, hvis `.local/config.js` findes) eller `/home/?mock` (demodata). Worker'en tillader CORS med `Authorization`, så preview kan hente direkte.
+
+**Indstillinger → Dashboard:** Vis dashboard (Til/Fra), Kalender (2 uger/Måned) og Opdater nu, der også viser kilde og seneste opdatering. Valgene gemmes som `dash` og `cal` i `cleanframe.home.v1`; gamle præferencer uden felterne får Til og 2 uger. I List-layoutet vises dashboardet ikke, så listen beholder sin fulde højde.
+
+**Dokken:** Netflix, Twitch, YouTube, DR TV, Spotify, TV 2 Play, Disney+ og HBO Max. Launch-ID'erne står i `app/device.js` og er markeret `KANDIDAT` (kendt ID fra et andet Samsung-TV) eller `PLADSHOLDER` (ukendt). En pladsholder slås op på navnet i TV'ets installerede apps, når den åbnes; ret ID'erne, når de er læst på TV'et. DR TV og TV 2 Play har intet frit logo i Simple Icons og vises med initialer – eller TV'ets eget app-ikon, når *Alle apps* har læst listen.
+
+**Byg:** `npm run build` skriver en usigneret `dist/CleanFrame-unsigned.wgt` med token (uden at vise det). Signering og installation er et separat trin; se [TV-noten](docs/tv-qe75q60t.md).
+
 ## What you can change
 
 - Choose a List or Dock layout, with icons, names or both.
-- Use a photograph, light or dark background, with a simple 12-hour clock.
+- Use a photograph, light or dark background, with a 24-hour clock (the dashboard's large clock in the Dock layout).
 - Adjust typography, focus and glass materials through the same Settings interface.
 - Choose and reorder Home apps; discover installed apps on the TV.
 - Select from fifteen wallpapers and save your preferences locally.
@@ -72,7 +106,7 @@ The detailed [device record](docs/tv-status.md) separates observed results from 
 ```sh
 npm run check
 npx playwright install chromium
-CLEANFRAME_PUBLIC_FONTS=1 npm run check:browser
+CLEANFRAME_PUBLIC_FONTS=1 npm run check:browser   # CLEANFRAME_CHROMIUM=/path/to/chrome uses an existing Chromium
 npm run check:public
 npm run export:public
 ```
@@ -97,5 +131,7 @@ Fork it, experiment and build something that suits your TV. If you find a useful
 CleanFrame's original code and documentation use the [MIT licence](LICENSE). Fonts, photographs and logos retain their own terms; read [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Paid Pangram binaries are excluded from Git and public exports. A local package may include them, so keep personal builds separate from public downloads.
 
 The [release review](docs/public-release.md) records the publication checks. Third-party assets retain the terms listed in their notices. CleanFrame is an independent project with no Samsung or streaming-service affiliation.
+
+The dashboard layer is ported from [tv-dashboard](https://github.com/raswraae-Jedi/tv-dashboard) (same owner as this fork); its Worker is unchanged. The Twitch mark comes from Simple Icons (CC0).
 
 [TV Detox](https://github.com/Ansub/tv-detox) is a useful example of making an agent-assisted TV project approachable. Its Android setup is a different implementation; the prompts and instructions here are written for CleanFrame and Tizen.

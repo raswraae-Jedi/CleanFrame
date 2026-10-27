@@ -8,6 +8,7 @@ import json
 import re
 import subprocess
 
+from dashboard_config import private_config, token_of
 from font_assets import ROOT
 
 
@@ -75,10 +76,24 @@ for name in ['app/assets/fonts/geist/OFL.txt', 'app/assets/fonts/newsreader/OFL.
     if not (ROOT / name).is_file():
         findings.append('Missing public font licence: ' + name)
 
+# The public dashboard config must stay token-free; a local token must not reach Git.
+if token_of((ROOT / 'app/dashboard-config.js').read_text()):
+    findings.append('Dashboard token in app/dashboard-config.js')
+local_config = private_config(ROOT)
+local_token = token_of(local_config.decode(errors='replace')) if local_config else ''
+if local_token:
+    for name in sorted(candidates):
+        path = ROOT / name
+        if path.is_file() and not path.is_symlink() and local_token.encode() in path.read_bytes():
+            findings.append('Local dashboard token in source file: ' + name)
+    if git('log', '--all', '--format=%h', '-S' + local_token).strip():
+        findings.append('Local dashboard token in reachable Git history')
+
 if findings:
     raise SystemExit('\n'.join(sorted(set(findings))[:20]) + '\nTotal findings: ' + str(len(set(findings))))
 print('Public-source checks passed for ' + str(len(candidates)) + ' candidate files and reachable Git paths.')
 print('Compared ' + str(len(private_fonts)) + ' local proprietary font files with reachable Git objects.')
 if not private_fonts:
     print('No private fonts on this machine; known-font byte comparison was skipped.')
+print('Dashboard token: ' + ('local token compared with source files and Git history.' if local_token else 'no local token on this machine; public config is token-free.'))
 print('Also review third-party notices, full history, GitHub logs and release assets before publication.')

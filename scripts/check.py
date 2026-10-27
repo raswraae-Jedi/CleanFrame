@@ -16,7 +16,12 @@ assert manifest.get('version') == json.loads((root / 'package.json').read_text()
 for tag in ['content', 'icon']:
     node = manifest.find('w:' + tag, ns)
     assert node is not None and (app / node.get('src', '')).is_file(), 'Missing ' + tag + ' file'
-assert all((app / name).is_file() for name in ['main.js', 'style.css'])
+assert all((app / name).is_file() for name in ['main.js', 'style.css', 'dashboard.js', 'dashboard-mock.js', 'dashboard-config.js'])
+# The committed dashboard config is public: demo data only, never the Worker token.
+from dashboard_config import token_of
+assert not token_of((app / 'dashboard-config.js').read_text()), 'Remove the Worker token from app/dashboard-config.js'
+worker = 'https://tv-dashboard.rasmus-wraae.workers.dev'
+assert any(a.get('origin') == worker for a in manifest.findall('w:access', ns)), 'The manifest must allow the dashboard Worker origin'
 for reference in ['assets/wallpapers/catalog.js', 'assets/adaptive-ink.js', 'assets/font-catalog.js']:
     assert (app / reference).is_file(), 'Missing runtime catalogue: ' + reference
 for filename in ['index.html']:
@@ -41,6 +46,7 @@ for wall in walls:
     for suffix in ['study-soft', 'field-blur', 'field-frost', 'field-clear']:
         assert (app / ('assets/materials/' + wall_id + '-' + suffix + '.jpg')).is_file(), 'Missing registered material: ' + wall_id + '/' + suffix
     assert (app / ('assets/wallpapers/' + wall_id + '-panel.jpg')).is_file(), 'Missing panel backdrop: ' + wall_id
-for icon in ['stremio', 'netflix', 'disneyplus', 'youtube', 'appletv', 'primevideo', 'abciview', 'sbs', 'applemusic', 'art', 'apps', 'settings']:
+# Home apps with a bundled mark (DR TV and TV 2 Play use initials or the TV's own icon).
+for icon in ['netflix', 'twitch', 'youtube', 'spotify', 'disneyplus', 'hbomax', 'art', 'apps', 'settings']:
     assert (app / ('assets/icons/' + icon + '.svg')).is_file(), 'Missing icon: ' + icon
 print('Widget identity, version and bundled resources are valid.')

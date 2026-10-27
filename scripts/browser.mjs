@@ -7,7 +7,8 @@ import { chromium } from 'playwright';
 export const root = fileURLToPath(new URL('../', import.meta.url));
 
 export async function openPreview({ publicFonts = false } = {}) {
-  const args = ['scripts/preview.py', '--port', '0'];
+  // Checks use demo dashboard data, so they never contact the Worker or need its token.
+  const args = ['scripts/preview.py', '--port', '0', '--mock-dashboard'];
   if (publicFonts || process.env.CLEANFRAME_PUBLIC_FONTS === '1') args.push('--public-fonts');
   const server = spawn('python3', args, {
     cwd: root, stdio: ['ignore', 'pipe', 'pipe']
@@ -27,7 +28,8 @@ export async function openPreview({ publicFonts = false } = {}) {
         if (match) { clearTimeout(timeout); resolve(match[0]); }
       });
     });
-    browser = await chromium.launch({ headless: true });
+    // CLEANFRAME_CHROMIUM points at an existing Chromium when Playwright's own download is unavailable.
+    browser = await chromium.launch({ headless: true, ...(process.env.CLEANFRAME_CHROMIUM ? { executablePath: process.env.CLEANFRAME_CHROMIUM } : {}) });
     return { browser, baseURL, close: async () => {
       try { await browser.close(); }
       finally { server.kill(); await once(server, 'exit'); }

@@ -16,5 +16,11 @@
     "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/tubi.svg",
     "licence": "CC0-1.0",
     "note": "Shape unchanged; white fill for launcher."
+  },
+  {
+    "icon": "twitch",
+    "source": "https://github.com/simple-icons/simple-icons/blob/16.36.0/icons/twitch.svg",
+    "licence": "CC0-1.0",
+    "note": "simple-icons 16.36.0 npm package. Shape unchanged; white fill for launcher."
   }
 ]

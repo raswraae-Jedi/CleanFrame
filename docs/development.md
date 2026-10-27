@@ -12,13 +12,14 @@ All UI assets, public fonts and the fifteen wallpapers are bundled. This private
 
 ## Runtime map and compatibility
 
-- `app/index.html` loads the device adapter, gallery/font/palette catalogues, `assets/icons/metrics.js` and `main.js`, with `style.css`.
+- `app/index.html` loads the device adapter, the dashboard (`dashboard-config.js`, `dashboard-mock.js`, `dashboard.js`), gallery/font/palette catalogues, `assets/icons/metrics.js` and `main.js`, with `style.css`.
+- `dashboard.js` owns the dashboard layer, its Worker requests and its own cache key `cleanframe.dashboard.v1`. `main.js` tells it when it is visible and which calendar range to show, and calls its clock tick. `app/dashboard-config.js` is public and token-free; `scripts/dashboard_config.py` substitutes `.local/config.js` (or `DASHBOARD_TOKEN`) in the preview, `npm run build` and `npm run package`, never in `npm run export:public` or the browser checks.
 - `main.js` owns the List and Dock layouts, panel stack, focus, preferences and wallpaper timers. `device.js` owns installed-app discovery and Tizen calls. Keep device details in that adapter.
 - The logical stage is 1920 x 1080, scaled uniformly to the viewport. Check at 1920 x 1080 and 1280 x 720. Glass geometry and cached materials must stay aligned.
-- Preferences use localStorage key `cleanframe.home.v1`, with a fallback read from `cleanframe.shore.v1`. Legacy fields are `dock`, `wallpaper`, `mode`, `lastApp` and `theme`. The 0.6 migration preserves app order, wallpaper, rotation and selection. Legacy `list` becomes Dark / List / Type; `shore` and `grid` become Photo / Dock / Glass. Appearance axes are stored separately. A saved dynamic app keeps its real app ID and name; discovery refreshes the installed catalogue. Keep migration checks when changing this format.
+- Preferences use localStorage key `cleanframe.home.v1`, with a fallback read from `cleanframe.shore.v1`. Legacy fields are `dock`, `wallpaper`, `mode`, `lastApp` and `theme`. The dashboard adds `dash` (`on`/`off`) and `cal` (`weeks`/`month`); saved preferences without them get `on` and `weeks`. The 0.6 migration preserves app order, wallpaper, rotation and selection. Legacy `list` becomes Dark / List / Type; `shore` and `grid` become Photo / Dock / Glass. Appearance axes are stored separately. A saved dynamic app keeps its real app ID and name; discovery refreshes the installed catalogue. Keep migration checks when changing this format.
 - `window.ShoreQA.state()` and `.where()` expose state and focus for browser tests. `minuteMs` can shorten rotation intervals in an isolated browser test.
 
-The tested target is the Tizen 9.0 TV in [TV status](tv-status.md). The manifest's `required_version="6.5"` is a package declaration, not proof that Tizen 6.5 has been tested. The exact TV Chromium/WebKit engine version has not been recorded. Keep runtime JavaScript ES5-compatible and verify any new DOM/CSS API on the target before claiming support. `node --check` checks syntax for Node; it does not enforce ES5 or TV API availability.
+This fork targets a QE75Q60T with Tizen 5.5; nothing in it has been run on that TV yet. Read [the QE75Q60T note](tv-qe75q60t.md) before installation; the manifest now declares `required_version="5.5"`, allows the Worker origin and requests the internet privilege. The upstream tested target is the Tizen 9.0 TV in [TV status](tv-status.md). The manifest's `required_version="6.5"` is a package declaration, not proof that Tizen 6.5 has been tested. The exact TV Chromium/WebKit engine version has not been recorded. Keep runtime JavaScript ES5-compatible and verify any new DOM/CSS API on the target before claiming support. `node --check` checks syntax for Node; it does not enforce ES5 or TV API availability.
 
 Keep material rendering in the development tools. See [asset generation](assets.md) and [testing](testing.md).
 
@@ -32,6 +33,8 @@ This Mac's setup lives under `.local/` and is excluded from Git:
 - `device.json`: TV host address.
 
 `npm run package` builds the widget from `app/`, configures the workspace-local SDK and signing profile, then signs it with the official SDK. It writes `dist/CleanFrame-unsigned.wgt` and `dist/CleanFrame.wgt`. `scripts/font_assets.py` adds only the six approved local Pangram files when complete pairs are available, plus their generated CSS/catalogue. It never copies private fonts into `app/`. Public checkouts use Manrope, Geist and Newsreader.
+
+`npm run build` writes the same private, unsigned `dist/CleanFrame-unsigned.wgt` without the SDK or signing, for signing with your own Tizen CLI profile. It includes the local dashboard token and states whether one was found, without printing it.
 
 `npm run export:public` is a separate offline, unsigned export. It always disables the proprietary overlay, includes the project/third-party notices and writes `dist/CleanFrame-public-unsigned.wgt`. It reads no signing credentials and contacts no TV. Use it for public build preparation; `npm run package` on this machine remains a personal build that can contain paid fonts. Asset release checks are listed in `docs/public-release.md`.
 

@@ -65,9 +65,13 @@ def font_overlay(root=ROOT, include_private=True):
 
 
 def write_widget_archive(output, root=ROOT, include_private=True):
-    """Create an unsigned archive without reading signing or device settings."""
+    """Create an unsigned archive without reading signing or device settings.
+
+    A private build also carries the local dashboard token; a public export never does."""
+    from dashboard_config import config_overlay
     app = root / 'app'
     overlay = font_overlay(root, include_private)
+    overlay.update(config_overlay(root, include_private))
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED, allowZip64=False) as package:
         for source in sorted(app.rglob('*')):
             if source.is_symlink():

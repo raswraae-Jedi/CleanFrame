@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="https://local.frame-home/app" version="0.6.1" viewmodes="maximized">
-  <tizen:application id="nClrkHome1.FrameHome" package="nClrkHome1" required_version="6.5"/>
+  <tizen:application id="nClrkHome1.FrameHome" package="nClrkHome1" required_version="5.5"/>
   <content src="index.html"/>
   <name>CleanFrame</name>
   <icon src="icon.png"/>
@@ -9,5 +9,8 @@
   <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
   <tizen:privilege name="http://tizen.org/privilege/application.info"/>
   <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+  <tizen:privilege name="http://tizen.org/privilege/internet"/>
+  <!-- The dashboard's only remote origin: the tv-dashboard Cloudflare Worker. -->
+  <access origin="https://tv-dashboard.rasmus-wraae.workers.dev" subdomains="false"/>
   <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" encryption="disable" install-location="auto" hwkey-event="enable"/>
 </widget>

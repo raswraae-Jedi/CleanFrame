@@ -1,8 +1,11 @@
-# Interaction behaviour — 0.6.1
+# Interaction behaviour — 0.6.1 with dashboard
+
+This fork targets a Samsung QE75Q60T (Tizen 5.5). The interface text is Danish; this document keeps the English names of the behaviours. The QE75Q60T is not a The Frame TV, so Art Mode is hidden (`ART_MODE = false` in `app/main.js`); setting it to true restores the Frame behaviour described below.
 
 ## Home
 
-- Dock: Left/Right scrolls the apps without wrapping. Up enters the top-right controls, starting with Art Mode or the last selected control. Left/Right moves between Art Mode, All apps and Settings. Down or Back returns to the selected app. The clock is at the top left.
+- Dock: Left/Right scrolls the apps without wrapping. Up enters the top-right controls, starting with the first control (Art Mode on a Frame, otherwise All apps) or the last selected control. Left/Right moves between them. Down or Back returns to the selected app. The clock is at the top left; with the dashboard on, its large clock replaces the small one.
+- Dashboard (Dock only): a non-focusable layer between the photo and the controls, above the Dock. It never receives focus, pointer events or key handling, so Dock and control navigation are unchanged. See Dashboard below.
 - List: Up/Down scrolls the apps without wrapping. Right enters the bottom-right controls, aligned with the clock above. Up/Down moves between Art Mode, All apps and Settings. Left or Back returns to the selected app. The list fades at both ends as it scrolls.
 - OK opens the selected item. Focus alone never launches an app.
 - Icons-only apps and controls reveal their names when focused. App presentation and control presentation are independent.
@@ -20,6 +23,7 @@ Settings opens a grouped overview: Background, Layout, Typography, Focus, Apps o
 | Layout | List or Dock; independent Text, Icons or Both choices for apps and Home controls |
 | Typography | Manrope, Neue Montreal, Mori, Pangram Sans, Geist and Newsreader, when available |
 | Focus | Type or Glass; Soft, Frost or Clear tint material |
+| Dashboard | Show dashboard On/Off; Calendar 2 weeks or Month; Refresh now with source and last update |
 | Apps on Home | Membership and arrangement editor |
 | Samsung | Samsung Home and TV settings |
 
@@ -33,7 +37,7 @@ The selected font applies to Home app names, the clock and Home controls, includ
 
 ## Streaming apps
 
-The nine default apps keep their known native IDs. Other installed consumer apps can also be added to Home. Launching uses the public `tizen.application.launch` API with the app's native ID. Missing apps and denied launches produce a real error. No web player, placeholder success page or account credential is embedded.
+The eight default apps are Netflix, Twitch, YouTube, DR TV, Spotify, TV 2 Play, Disney+ and HBO Max, in that order. Their IDs in `app/device.js` are marked KANDIDAT (an ID seen on another Samsung TV) or PLADSHOLDER (unknown); none has been read from the QE75Q60T. Installed-app discovery matches these apps by name too, and launching an app with a placeholder ID first looks up the installed app with that name; when none is found, the message says so. Other installed consumer apps can also be added to Home. Launching uses the public `tizen.application.launch` API with the app's native ID. Missing apps and denied launches produce a real error. No web player, placeholder success page or account credential is embedded.
 
 ## All apps
 
@@ -79,8 +83,14 @@ Launcher wallpaper is separate from native Art Mode. Runtime photos, materials a
 
 The native Home operation and startup configuration from 19 October remain separate from this app update. Home from Netflix was confirmed for that configuration; power-on after Netflix remains provisional. Streaming apps retain their own Back navigation. Netflix did not exit on repeated Back in the observed test, so there was no app-exit destination to verify. No global Back interception or key-filter hook was installed. See [TV status](tv-status.md) for device evidence; this behaviour specification is not an installation or visual-verification record for 0.6.0.
 
+## Dashboard
+
+The Dock layout shows the tv-dashboard data above the Dock: clock, Danish date and status line; weather for Odense (now, today's rain from 06 to 24 and three days); the calendar as two weeks or the month with dots on days with appointments; Duolingo streak and today's lesson; WHOOP Recovery, Sleep, Strain and steps. Missing WHOOP values read "afventer". The status line shows when data was fetched, "Demodata" for demo data, and turns amber when the Worker cannot be reached or a source is stale; the last good data stays visible.
+
+Data comes from the Worker every 15 minutes while the dashboard is visible, after 60 seconds on failure, and on return when older than five minutes. Nothing is fetched while the app is hidden, in the List layout or with the dashboard off. The photo gets a dark tone that fades out above the Dock, so the pre-rendered Dock material still matches. The layer has no live filters or animation.
+
 ## Clock and rendering
 
-Both layouts show the TV's local time in 12-hour format, without AM/PM or seconds. It updates at the minute boundary and on return to the launcher. No date or clock panel is shown.
+Both layouts show the TV's local time in 24-hour format, without seconds. It updates at the minute boundary and on return to the launcher. With the dashboard on, the dashboard's large clock and date replace the small clock.
 
 Photographic materials and blurred panel backgrounds are generated before packaging and stay aligned with the full-screen image. Photo colour and contrast metadata are also prepared offline. Navigation does not sample image pixels, run an optics engine or apply live backdrop blur. Flat backgrounds use matching light or dark panel colours. Focus feedback uses transforms and opacity; reduced motion removes animated scaling and movement while retaining opacity feedback.
